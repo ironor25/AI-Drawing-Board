@@ -2,7 +2,6 @@ import { FilesetResolver, HandLandmarker } from "@mediapipe/tasks-vision";
 
 export class GestureManager {
     private video: HTMLVideoElement;
-    //@ts-ignore
     private canvas: HTMLCanvasElement;
     private landmarker: HandLandmarker | null = null;
     private animationFrameId: number | null = null;
@@ -11,13 +10,19 @@ export class GestureManager {
     private isDrawing = false;
     private lastX = 0;
     private lastY = 0;
+    private deadZone = 5; // Ignore movements smaller than 2px
+
 
     // Configuration
     // 0.1 = slow/smooth, 0.9 = fast/jittery. 0.5 is a good balance for drawing.
     private smoothingFactor = 0.5; 
     
     // How close index and middle finger need to be to trigger "Draw" (0.0 - 1.0)
-    private drawThreshold = 0.06; 
+    private framesInDrawState = 0; // Counter for stability
+    private REQUIRED_STABLE_FRAMES = 4; // Need ~4 frames (approx 60ms) of "stuck" state before drawing starts
+    
+    // Updated threshold (slightly tighter)
+    private drawThreshold = 0.05; 
 
     private screenWidth = window.innerWidth;
     private screenHeight = window.innerHeight;
@@ -46,123 +51,136 @@ export class GestureManager {
     }
 
     async init() {
-            try {
-                const vision = await FilesetResolver.forVisionTasks(
-                    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.10/wasm"
-                );
+        const vision = await FilesetResolver.forVisionTasks(
+            "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
+        );
 
-                this.landmarker = await HandLandmarker.createFromOptions(vision, {
-                    baseOptions: {
-                        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
-                        delegate: "GPU"
-                    },
-                    runningMode: "VIDEO",
-                    numHands: 1
-                });
+        this.landmarker = await HandLandmarker.createFromOptions(vision, {
+            baseOptions: {
+                modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+                delegate: "GPU"
+            },
+            runningMode: "VIDEO",
+            numHands: 1,
+            minHandDetectionConfidence: 0.6,
+            minHandPresenceConfidence: 0.6,
+            minTrackingConfidence: 0.6
+        });
 
-                // ONLY IF LANDMARKER IS READY, START WEBCAM
-                await this.startWebcam();
-                
-            } catch (error) {
-                console.error("MediaPipe Init Failed:", error);
-            }
-        }
-        private async startWebcam() {
-        const constraints = {
-            video: {
-                width: 1280,
-                height: 720,
-                facingMode: "user"
-            }
-        };
+        this.startWebcam();
+    }
 
+    async startWebcam() {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia(constraints);
-            this.video.srcObject = stream;
-            this.video.addEventListener("loadeddata", () => {
-                this.video.play();
-                this.loop(); // Start the detection loop
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    width: 1280,
+                    height: 720,
+                    frameRate: { ideal: 60 } // Request high FPS for lower latency
+                } 
             });
+            this.video.srcObject = stream;
+            await this.video.play();
+            this.loop();
         } catch (err) {
-            // This will tell you EXACTLY why the prompt didn't show
-            console.error("Camera Error: ", err);
-            alert("Camera access denied or not available. Check HTTPS.");
+            console.error("Camera error:", err);
+            alert("Camera permission denied or not available.");
         }
     }
+
     private loop = () => {
-    // Only proceed if landmarker is ready and video is playing
-        if (!this.landmarker || this.video.readyState !== 4) {
-            this.animationFrameId = requestAnimationFrame(this.loop);
-            return;
-        }
+        if (!this.landmarker || this.video.paused || this.video.ended) return;
 
         const startTimeMs = performance.now();
         const results = this.landmarker.detectForVideo(this.video, startTimeMs);
 
         if (results.landmarks && results.landmarks.length > 0) {
             const hand = results.landmarks[0];
-                
-                // 8 = Index Finger Tip
-                // 12 = Middle Finger Tip
-                const indexTip = hand[8];
-                const middleTip = hand[12];
-
-                this.handleGestures(indexTip, middleTip);
+            
+            // 8 = Index Finger Tip
+            // 12 = Middle Finger Tip
+           
+            this.handleGestures(hand);
         }
 
         this.animationFrameId = requestAnimationFrame(this.loop);
     };
 
+// Add these properties to your class if they aren't there
+    // Ignore movements smaller than 3px (stops jitter)
+    
+    private handleGestures(hand: any) {
+        // 8 = Index Tip
+        // 4 = Thumb Tip
+        const indexTip = hand[8];
+        const thumbTip = hand[4];
         
+        // --- 1. CURSOR STABILIZATION ---
+        
+        // Use Index Tip for position (standard)
+        // Remember: x is mirrored (1 - x)
+        const rawX = (1 - indexTip.x) * this.screenWidth;
+        const rawY = indexTip.y * this.screenHeight;
 
-    private handleGestures(index: any, middle: any) {
-        // 1. Map Coordinates (Mirrored)
-        // We use the Index finger as the "Cursor"
-        const targetX = (1 - index.x) * this.screenWidth;
-        const targetY = index.y * this.screenHeight;
+        // Calculate distance from last known position
+        const moveDist = Math.hypot(rawX - this.lastX, rawY - this.lastY);
 
-        // 2. Smooth Movement (Lerp)
-        const x = this.lastX + (targetX - this.lastX) * this.smoothingFactor;
-        const y = this.lastY + (targetY - this.lastY) * this.smoothingFactor;
+        let x = this.lastX;
+        let y = this.lastY;
 
-        this.lastX = x;
-        this.lastY = y;
+        // DEAD ZONE: Only move if the hand actually moved significantly (> 3px)
+        if (moveDist > this.deadZone) {
+            // Apply smoothing
+            x = this.lastX + (rawX - this.lastX) * this.smoothingFactor;
+            y = this.lastY + (rawY - this.lastY) * this.smoothingFactor;
+            
+            this.lastX = x;
+            this.lastY = y;
+        }
 
-        // 3. Update Visuals
         this.updateCursorVisual(x, y);
 
-        // 4. Calculate Distance between Index (8) and Middle (12)
-        // If they are close together -> DRAW mode
-        const distance = Math.hypot(
-            (1 - index.x) - (1 - middle.x), 
-            index.y - middle.y
+        // --- 2. PINCH DETECTION (The Logic) ---
+
+        // Calculate distance between Index Tip and Thumb Tip
+        const pinchDist = Math.hypot(
+            (1 - indexTip.x) - (1 - thumbTip.x), 
+            indexTip.y - thumbTip.y
         );
 
-        const shouldDraw = distance < this.drawThreshold;
+        // Threshold: 0.05 is usually good for a tight pinch
+        const isPinching = pinchDist < this.drawThreshold;
 
-        // 5. State Machine for Events
+        // --- 3. DEBOUNCE LOGIC (The Filter) ---
+        
+        if (isPinching) {
+            this.framesInDrawState++;
+        } else {
+            this.framesInDrawState = 0; // Reset immediately if fingers separate
+        }
+
+        // Only trigger draw if we have been pinching for X frames (Stability)
+        const shouldDraw = this.framesInDrawState > this.REQUIRED_STABLE_FRAMES;
+
+        // --- 4. DISPATCH EVENTS ---
+
         if (shouldDraw && !this.isDrawing) {
-            // DOWN
+            // START DRAWING (MouseDown)
             this.dispatchMouseEvent("mousedown", x, y);
             this.isDrawing = true;
             this.updateCursorColor("active");
         } 
         else if (!shouldDraw && this.isDrawing) {
-            // UP
+            // STOP DRAWING (MouseUp)
             this.dispatchMouseEvent("mouseup", x, y);
             this.isDrawing = false;
             this.updateCursorColor("idle");
         } 
-        else if (this.isDrawing) {
-            // DRAG
-            this.dispatchMouseEvent("mousemove", x, y);
-        } 
         else {
-            // HOVER
+            // ALWAYS MOVE (Drag or Hover)
             this.dispatchMouseEvent("mousemove", x, y);
         }
     }
-
     private dispatchMouseEvent(type: string, x: number, y: number) {
         // Hide cursor briefly so we don't click "on ourselves"
         // (Though pointer-events: none should handle this, this is a safety check)
