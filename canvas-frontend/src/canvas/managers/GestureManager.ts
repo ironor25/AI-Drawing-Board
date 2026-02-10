@@ -2,7 +2,7 @@ import { FilesetResolver, HandLandmarker } from "@mediapipe/tasks-vision";
 
 export class GestureManager {
     private video: HTMLVideoElement;
-    private canvas: HTMLCanvasElement;
+    
     private landmarker: HandLandmarker | null = null;
     private animationFrameId: number | null = null;
 
@@ -30,8 +30,8 @@ export class GestureManager {
     // Visual Cursor
     private cursorElement: HTMLDivElement | null = null;
 
-    constructor(canvas: HTMLCanvasElement) {
-        this.canvas = canvas;
+    constructor() {
+        
         
         // Setup hidden video element
         this.video = document.createElement("video");
