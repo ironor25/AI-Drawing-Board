@@ -1,3 +1,4 @@
+// tools/toolTypes.ts
 export type ToolType =
   | "pencil"
   | "rect"
@@ -7,3 +8,4 @@ export type ToolType =
   | "AI"
   | "pan"
   | "eraser"
+  | "trash"

@@ -15,3 +15,7 @@ export function loadShapes(): ShapePayload[] {
 export function saveShapes(shapes: ShapePayload[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(shapes));
 }
+
+export function clearShapes() {
+  localStorage.removeItem(STORAGE_KEY);
+}

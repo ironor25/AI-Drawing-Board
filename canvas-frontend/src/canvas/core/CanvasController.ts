@@ -1,16 +1,13 @@
-import type { ShapePayload } from "../types/shape";
+import type { ShapePayload } from "../../types/shape";
 import { drawShape } from "./drawShape";
 
 export class CanvasController {
-    private ctx: CanvasRenderingContext2D;
-    private canvas: HTMLCanvasElement;
+  private ctx: CanvasRenderingContext2D;
+  private canvas: HTMLCanvasElement;
 
-  constructor(
-    canvas: HTMLCanvasElement,
-    ctx: CanvasRenderingContext2D
-  ) {
+  constructor(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
     this.ctx = ctx;
-    this.canvas = canvas
+    this.canvas = canvas;
   }
 
   clear(scale = 1, offsetX = 0, offsetY = 0) {

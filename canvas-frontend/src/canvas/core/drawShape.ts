@@ -1,9 +1,9 @@
-import { RectangleShape } from "../shapes/Rectangle";
-import { CircleShape } from "../shapes/Circle";
-import { LineShape } from "../shapes/Line";
-import { PencilShape } from "../shapes/Pencil";
-import { TextShape } from "../shapes/Text";
-import type { ShapePayload } from "../types/shape";
+import { RectangleShape } from "../../shapes/Rectangle"
+import { CircleShape } from "../../shapes/Circle";
+import { LineShape } from "../../shapes/Line";
+import { PencilShape } from "../../shapes/Pencil";
+import { TextShape } from "../../shapes/Text";
+import type { ShapePayload } from "../../types/shape";
 
 
 export function drawShape(
