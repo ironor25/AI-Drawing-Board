@@ -1,23 +1,23 @@
 // import axios from "axios";
 // import { nanoid } from "nanoid";
 // import { BACKEND_URL } from "../../utils/config"; // Adjust path
-import type { ShapePayload } from "../../types/shape";
+// import type { ShapePayload } from "../../types/shape";
 import type { Viewport } from "../core/viewport";
 
 export class AIManager {
     private canvas: HTMLCanvasElement;
     private viewport: Viewport;
-    private onShapesReceived: (shapes: ShapePayload[]) => void;
+    // private onShapesReceived: (shapes: ShapePayload[]) => void;
     private activeOverlay: HTMLDivElement | null = null;
 
     constructor(
         canvas: HTMLCanvasElement, 
         viewport: Viewport, 
-        onReceive: (s: ShapePayload[]) => void
+        // onReceive: (s: ShapePayload[]) => void
     ) {
         this.canvas = canvas;
         this.viewport = viewport;
-        this.onShapesReceived = onReceive;
+        // this.onShapesReceived = onReceive;
     }
 
     public openPrompt(worldX: number, worldY: number, width: number, height: number) {
@@ -107,28 +107,28 @@ export class AIManager {
             button.style.background = "#555";
             wrapper.style.cursor = "wait";
 
-            try {
-                // Fetch from Backend
-                const shapes = await this.fetchShapes(prompt, worldX, worldY, width, height);
+            // try {
+            //     // Fetch from Backend
+            //     const shapes = await this.fetchShapes(prompt, worldX, worldY, width, height);
                 
-                // Success: Return data and Close
-                if (shapes && shapes.length > 0) {
-                    this.onShapesReceived(shapes);
-                    this.close(); 
-                } else {
-                    throw new Error("No shapes returned");
-                }
-            } catch (err) {
-                console.error(err);
-                button.textContent = "Failed ❌";
-                button.style.background = "red";
-                setTimeout(() => {
-                    button.textContent = "Try Again";
-                    button.disabled = false;
-                    input.disabled = false;
-                    button.style.background = "#8A2BE2";
-                }, 2000);
-            }
+            //     // Success: Return data and Close
+            //     if (shapes && shapes.length > 0) {
+            //         this.onShapesReceived(shapes);
+            //         this.close(); 
+            //     } else {
+            //         throw new Error("No shapes returned");
+            //     }
+            // } catch (err) {
+            //     console.error(err);
+            //     button.textContent = "Failed ❌";
+            //     button.style.background = "red";
+            //     setTimeout(() => {
+            //         button.textContent = "Try Again";
+            //         button.disabled = false;
+            //         input.disabled = false;
+            //         button.style.background = "#8A2BE2";
+            //     }, 2000);
+            // }
         };
 
         // Click or Ctrl+Enter to submit
@@ -152,17 +152,17 @@ export class AIManager {
         }
     }
 
-    private async fetchShapes(prompt: string, x: number, y: number, w: number, h: number): Promise<ShapePayload[]> {
-        // ... (Same axios logic as before) ...
-        // Ensure you pass `x, y, w, h` in the prompt so backend knows the boundary
+    // private async fetchShapes(prompt: string, x: number, y: number, w: number, h: number): Promise<ShapePayload[]> {
+    //     // ... (Same axios logic as before) ...
+    //     // Ensure you pass `x, y, w, h` in the prompt so backend knows the boundary
         
-        try {
-             // Mocking backend for logic test (Replace with your axios call)
-             // const response = await axios.post(...)
+    //     try {
+    //          // Mocking backend for logic test (Replace with your axios call)
+    //          // const response = await axios.post(...)
              
-             return []; 
-        } catch (e) {
-            throw e;
-        }
-    }
+    //          return []; 
+    //     } catch (e) {
+    //         throw e;
+    //     }
+    // }
 }
