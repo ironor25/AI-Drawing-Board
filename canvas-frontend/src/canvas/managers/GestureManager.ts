@@ -46,45 +46,49 @@ export class GestureManager {
     }
 
     async init() {
-    const vision = await FilesetResolver.forVisionTasks(
-        // Use a versioned CDN link instead of a local path
-        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.10/wasm"
-    );
+            try {
+                const vision = await FilesetResolver.forVisionTasks(
+                    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.10/wasm"
+                );
 
-    this.landmarker = await HandLandmarker.createFromOptions(vision, {
-        baseOptions: {
-            // Also use the absolute URL for the model
-            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
-            delegate: "GPU"
-        },
-        runningMode: "VIDEO",
-        numHands: 1,
-        minHandDetectionConfidence: 0.6,
-        minHandPresenceConfidence: 0.6,
-        minTrackingConfidence: 0.6
-    });
+                this.landmarker = await HandLandmarker.createFromOptions(vision, {
+                    baseOptions: {
+                        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+                        delegate: "GPU"
+                    },
+                    runningMode: "VIDEO",
+                    numHands: 1
+                });
 
-    this.startWebcam();
-}
+                // ONLY IF LANDMARKER IS READY, START WEBCAM
+                await this.startWebcam();
+                
+            } catch (error) {
+                console.error("MediaPipe Init Failed:", error);
+            }
+        }
+        private async startWebcam() {
+        const constraints = {
+            video: {
+                width: 1280,
+                height: 720,
+                facingMode: "user"
+            }
+        };
 
-    async startWebcam() {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { 
-                    width: 1280,
-                    height: 720,
-                    frameRate: { ideal: 60 } // Request high FPS for lower latency
-                } 
-            });
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
             this.video.srcObject = stream;
-            await this.video.play();
-            this.loop();
+            this.video.addEventListener("loadeddata", () => {
+                this.video.play();
+                this.loop(); // Start the detection loop
+            });
         } catch (err) {
-            console.error("Camera error:", err);
-            alert("Camera permission denied or not available.");
+            // This will tell you EXACTLY why the prompt didn't show
+            console.error("Camera Error: ", err);
+            alert("Camera access denied or not available. Check HTTPS.");
         }
     }
-
     private loop = () => {
     // Only proceed if landmarker is ready and video is playing
         if (!this.landmarker || this.video.readyState !== 4) {
