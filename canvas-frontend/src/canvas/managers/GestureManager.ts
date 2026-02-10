@@ -46,24 +46,26 @@ export class GestureManager {
     }
 
     async init() {
-        const vision = await FilesetResolver.forVisionTasks(
-            "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
-        );
+    const vision = await FilesetResolver.forVisionTasks(
+        // Use a versioned CDN link instead of a local path
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.10/wasm"
+    );
 
-        this.landmarker = await HandLandmarker.createFromOptions(vision, {
-            baseOptions: {
-                modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
-                delegate: "GPU"
-            },
-            runningMode: "VIDEO",
-            numHands: 1,
-            minHandDetectionConfidence: 0.6,
-            minHandPresenceConfidence: 0.6,
-            minTrackingConfidence: 0.6
-        });
+    this.landmarker = await HandLandmarker.createFromOptions(vision, {
+        baseOptions: {
+            // Also use the absolute URL for the model
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+            delegate: "GPU"
+        },
+        runningMode: "VIDEO",
+        numHands: 1,
+        minHandDetectionConfidence: 0.6,
+        minHandPresenceConfidence: 0.6,
+        minTrackingConfidence: 0.6
+    });
 
-        this.startWebcam();
-    }
+    this.startWebcam();
+}
 
     async startWebcam() {
         try {
@@ -84,24 +86,30 @@ export class GestureManager {
     }
 
     private loop = () => {
-        if (!this.landmarker || this.video.paused || this.video.ended) return;
+    // Only proceed if landmarker is ready and video is playing
+        if (!this.landmarker || this.video.readyState !== 4) {
+            this.animationFrameId = requestAnimationFrame(this.loop);
+            return;
+        }
 
         const startTimeMs = performance.now();
         const results = this.landmarker.detectForVideo(this.video, startTimeMs);
 
         if (results.landmarks && results.landmarks.length > 0) {
             const hand = results.landmarks[0];
-            
-            // 8 = Index Finger Tip
-            // 12 = Middle Finger Tip
-            const indexTip = hand[8];
-            const middleTip = hand[12];
+                
+                // 8 = Index Finger Tip
+                // 12 = Middle Finger Tip
+                const indexTip = hand[8];
+                const middleTip = hand[12];
 
-            this.handleGestures(indexTip, middleTip);
+                this.handleGestures(indexTip, middleTip);
         }
 
         this.animationFrameId = requestAnimationFrame(this.loop);
     };
+
+        
 
     private handleGestures(index: any, middle: any) {
         // 1. Map Coordinates (Mirrored)

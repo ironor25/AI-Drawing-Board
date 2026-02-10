@@ -48,7 +48,7 @@ export function CanvasOverlay({
           }`}
         >
           <span className={`w-2 h-2 rounded-full ${isHandMode ? "bg-red-500 animate-pulse" : "bg-neutral-600"}`} />
-          {isHandMode ? "Stop Tracking" : "Hand Mode"}
+          {isHandMode ? "Stop Tracking" : "Hand Mode (Beta)"}
         </button>
       </div>
 
