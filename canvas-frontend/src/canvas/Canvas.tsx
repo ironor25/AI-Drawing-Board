@@ -32,7 +32,7 @@ export function Canvas() {
   useEffect(() => {
     if (isHandMode && canvasRef.current) {
       // Start Tracking
-      gestureManagerRef.current = new GestureManager(canvasRef.current);
+      gestureManagerRef.current = new GestureManager();
     } else {
       // Stop Tracking
       if (gestureManagerRef.current) {

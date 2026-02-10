@@ -98,7 +98,7 @@ export class InitDraw {
     public toggleHandTracking(enable: boolean) {
           if (enable) {
               if (!this.gestureManager) {
-                  this.gestureManager = new GestureManager(this.canvas);
+                  this.gestureManager = new GestureManager();
               }
           } else {
               // You'd need to add a cleanup/stop method to GestureManager
