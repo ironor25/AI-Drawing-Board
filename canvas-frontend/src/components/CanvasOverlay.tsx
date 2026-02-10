@@ -22,7 +22,7 @@ export function CanvasOverlay({
     <div className="absolute inset-0 pointer-events-none p-4">
       
       {/* 1. TOP LEFT: Menu Button */}
-      <div className="absolute top-4 left-4 pointer-events-auto z-[60]">
+      <div className="absolute top-4 left-4 pointer-events-auto">
       {/* z-[60] is crucial. It puts the button ABOVE the sidebar's closing layer */}
       <button
         onClick={onOpenSidebar}

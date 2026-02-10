@@ -1,6 +1,6 @@
-import axios from "axios";
-import { nanoid } from "nanoid";
-import { BACKEND_URL } from "../../utils/config"; // Adjust path
+// import axios from "axios";
+// import { nanoid } from "nanoid";
+// import { BACKEND_URL } from "../../utils/config"; // Adjust path
 import type { ShapePayload } from "../../types/shape";
 import type { Viewport } from "../core/viewport";
 
@@ -159,6 +159,7 @@ export class AIManager {
         try {
              // Mocking backend for logic test (Replace with your axios call)
              // const response = await axios.post(...)
+             
              return []; 
         } catch (e) {
             throw e;
