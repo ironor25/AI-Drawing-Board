@@ -9,7 +9,7 @@ export function Canvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [selectedTool, setSelectedTool] = useState<ToolType>("rect");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  // State to track if hand gestures are active
+  
   const [isHandMode, setIsHandMode] = useState(false);
   
   // We use Refs for managers to avoid re-renders, but State for InitDraw if you need it in UI
