@@ -11,8 +11,8 @@ export class GestureManager {
     private lastX = 0;
     private lastY = 0;
     private deadZone = 5; // Ignore movements smaller than 2px
-
-
+    private onLoaded?: () => void;
+    private isReady = false;
     // Configuration
     // 0.1 = slow/smooth, 0.9 = fast/jittery. 0.5 is a good balance for drawing.
     private smoothingFactor = 0.5; 
@@ -30,9 +30,8 @@ export class GestureManager {
     // Visual Cursor
     private cursorElement: HTMLDivElement | null = null;
 
-    constructor() {
-        
-        
+    constructor(onLoaded?: () => void) {
+        this.onLoaded = onLoaded;
         // Setup hidden video element
         this.video = document.createElement("video");
         this.video.style.display = "none";
@@ -51,23 +50,37 @@ export class GestureManager {
     }
 
     async init() {
-        const vision = await FilesetResolver.forVisionTasks(
-            "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
-        );
+        // Prevent double-init if called multiple times
+        if (this.isReady) {
+            this.onLoaded?.();
+            return;
+        }
 
-        this.landmarker = await HandLandmarker.createFromOptions(vision, {
-            baseOptions: {
-                modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
-                delegate: "GPU"
-            },
-            runningMode: "VIDEO",
-            numHands: 1,
-            minHandDetectionConfidence: 0.6,
-            minHandPresenceConfidence: 0.6,
-            minTrackingConfidence: 0.6
-        });
+        try {
+            const vision = await FilesetResolver.forVisionTasks(
+                "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.10/wasm"
+            );
 
-        this.startWebcam();
+            this.landmarker = await HandLandmarker.createFromOptions(vision, {
+                baseOptions: {
+                    modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+                    delegate: "GPU"
+                },
+                runningMode: "VIDEO",
+                numHands: 1,
+                minHandDetectionConfidence: 0.6,
+                minHandPresenceConfidence: 0.6,
+                minTrackingConfidence: 0.6
+            });
+
+            await this.startWebcam();
+
+            
+        } catch (error) {
+            console.error("MediaPipe Init Failed:", error);
+            // In a real app, you might want an onError callback here too
+            alert("Failed to load AI model. Please refresh.");
+        }
     }
 
     async startWebcam() {
@@ -81,10 +94,17 @@ export class GestureManager {
             });
             this.video.srcObject = stream;
             await this.video.play();
+            if (this.onLoaded) {
+                this.onLoaded(); // <--- EXECUTE IT
+            } else {
+                console.error("CRITICAL: No callback found in this.onLoaded!");
+            }
+            this.isReady = true;
             this.loop();
         } catch (err) {
             console.error("Camera error:", err);
             alert("Camera permission denied or not available.");
+            if (this.onLoaded) this.onLoaded();
         }
     }
 
@@ -236,15 +256,40 @@ export class GestureManager {
     }
 
     public stop() {
-        if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
-        
-        if (this.video.srcObject) {
-            const tracks = (this.video.srcObject as MediaStream).getTracks();
-            tracks.forEach(t => t.stop());
+        // 1. Stop the loop
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
         }
         
+        // 2. Kill the Camera Stream (Turn off the light)
+        if (this.video && this.video.srcObject) {
+            const stream = this.video.srcObject as MediaStream;
+            const tracks = stream.getTracks();
+            
+            tracks.forEach(track => {
+                track.stop(); // This is what actually turns off the camera hardware
+                stream.removeTrack(track);
+            });
+            
+            this.video.srcObject = null;
+        }
+        
+        // 3. Clean up DOM elements
         this.video.remove();
-        if (this.cursorElement) this.cursorElement.remove();
+        if (this.cursorElement) {
+            this.cursorElement.remove();
+            this.cursorElement = null;
+        }
+
+        // 4. Reset State
+        this.landmarker?.close(); // Close the AI model to free memory
+        this.landmarker = null;
+        this.isReady = false; // Allow re-initialization next time
+        
+        // 5. Remove Listeners
         window.removeEventListener('resize', this.updateScreenSize);
+        
+       
     }
 }

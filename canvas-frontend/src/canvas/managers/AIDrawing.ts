@@ -72,7 +72,7 @@ export class AIManager {
 
         // 5. Create Button
         const button = document.createElement("button");
-        button.textContent = "Generate ✨";
+        button.textContent = "Generate ✨ (Coming Soon)";
         Object.assign(button.style, {
             padding: "8px 16px",
             background: "#8A2BE2",
@@ -81,7 +81,8 @@ export class AIManager {
             borderRadius: "4px",
             cursor: "pointer",
             fontWeight: "bold",
-            fontSize: "13px"
+            fontSize: "13px",
+            
         });
 
         // 6. Append

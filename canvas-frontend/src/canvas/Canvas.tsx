@@ -9,12 +9,26 @@ export function Canvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [selectedTool, setSelectedTool] = useState<ToolType>("rect");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  
+  const [isHandLoading, setIsHandLoading] = useState(false);
   const [isHandMode, setIsHandMode] = useState(false);
   
   // We use Refs for managers to avoid re-renders, but State for InitDraw if you need it in UI
   const [canvasManager, setCanvasManager] = useState<InitDraw | null>(null);
   const gestureManagerRef = useRef<GestureManager | null>(null);
+
+  const toggleHandMode = () => {
+    if (isHandLoading) return; // Prevent spam clicking
+    
+    if (!isHandMode) {
+       // user wants to turn ON -> Start Loading
+       setIsHandLoading(true);
+       setIsHandMode(true);
+    } else {
+       // user wants to turn OFF -> Instant
+       setIsHandMode(false);
+       setIsHandLoading(false);
+    }
+  };
 
   // 1. Initialize Canvas Engine (Runs once)
   useEffect(() => {
@@ -31,21 +45,24 @@ export function Canvas() {
   // 3. Handle Hand Tracking Toggle
   useEffect(() => {
     if (isHandMode && canvasRef.current) {
-      // Start Tracking
-      gestureManagerRef.current = new GestureManager();
+        // Start...
+        gestureManagerRef.current = new GestureManager(
+            () => setIsHandLoading(false)
+        );
     } else {
-      // Stop Tracking
-      if (gestureManagerRef.current) {
-        // Ideally, add a stop() method to GestureManager to close webcam stream
-        // gestureManagerRef.current.stop(); 
-        gestureManagerRef.current = null;
-      }
+        // Stop...
+        if (gestureManagerRef.current) {
+            gestureManagerRef.current.stop(); // <--- THIS MUST RUN
+            gestureManagerRef.current = null;
+        }
+        setIsHandLoading(false);
     }
 
-    // Cleanup on unmount
+    // Cleanup on Unmount (e.g. navigating away)
     return () => {
-      // gestureManagerRef.current?.stop();
-      gestureManagerRef.current = null;
+        if (gestureManagerRef.current) {
+            gestureManagerRef.current.stop();
+        }
     };
   }, [isHandMode]);
 
@@ -75,12 +92,14 @@ export function Canvas() {
       />
 
       <CanvasOverlay
-        selectedTool={selectedTool}
-        onSelectTool={handleSelectTool}
-        isHandMode={isHandMode}
-        onToggleHandMode={() => setIsHandMode(!isHandMode)}
-        onOpenSidebar={() => setIsSidebarOpen(prev => !prev)}
-      />
+          selectedTool={selectedTool}
+          onSelectTool={handleSelectTool}
+          isHandMode={isHandMode}
+          // Pass the new toggle and state
+          onToggleHandMode={toggleHandMode} 
+          isHandLoading={isHandLoading}
+          onOpenSidebar={() => setIsSidebarOpen(prev => !prev)}
+       />
 
       {/* 3. The Sidebar itself */}
       <Sidebar 
@@ -88,12 +107,8 @@ export function Canvas() {
         onClose={() => setIsSidebarOpen(false)}
       />
       
-      {/* Optional: Visual Indicator when Hand Mode is active */}
-      {isHandMode && (
-        <div className="absolute top-4 right-4 bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse pointer-events-none">
-          ● Live Tracking
-        </div>
-      )}
+
+    
     </div>
   );
 }
