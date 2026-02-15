@@ -51,7 +51,7 @@ export class InitDraw {
     window.addEventListener("resize", this.handleResize);
 
 
-    this.aiManager = new AIManager(canvas, this.viewport, (newShapes :any) => {
+    this.aiManager = new AIManager(canvas, this.viewport, (newShapes :ShapePayload[]) => {
             // Callback: This runs when AI finishes
             this.shapes.push(...newShapes);
             saveShapes(this.shapes);

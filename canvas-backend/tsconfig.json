@@ -1,4 +1,9 @@
 {
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", 
+    "prisma.config.ts",      // <--- ADD THIS
+    "**/*.spec.ts",
+    "**/*.test.ts"],
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
     // File Layout
@@ -10,6 +15,7 @@
     "module": "nodenext",
     "target": "esnext",
     "types": ["node"],
+    
     // For nodejs:
     // "lib": ["esnext"],
     // "types": ["node"],

@@ -14,7 +14,7 @@ const apiKey = process.env.GEMINI_API_KEY;
 if (!apiKey) throw new Error("GEMINI_API_KEY missing");
 
 const genAI = new GoogleGenerativeAI(apiKey);
-const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+const model = genAI.getGenerativeModel({ model: "gemini-3-flash" });
 
 // 2. AI Rate Limiter (Strict: 10 requests/hour to save cost)
 const genLimiter = rateLimit({
@@ -24,18 +24,18 @@ const genLimiter = rateLimit({
 });
 
 // 3. The Route
-generate_router.post("/", authMiddleware, genLimiter, async (req, res) => {
+generate_router.post("/", genLimiter, async (req, res) => {
     try {
         const prompt = req.body.prompt;
-        
+        console.log(prompt)
         if (!prompt) return res.status(400).json({ message: "Prompt is required" });
-        if (prompt.length > 500) return res.status(400).json({ message: "Prompt too long" });
+        if (prompt.length > 3000) return res.status(400).json({ message: "Prompt too long" });
 
         // 4. THE SYSTEM PROMPT (Magic Sauce)
         // We instruct AI to act as a geometry engine, not a chatbot.
-        const systemInstruction = prompt_generator(prompt.desc, prompt.bounds)
 
-        const result = await model.generateContent(systemInstruction);
+
+        const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
 

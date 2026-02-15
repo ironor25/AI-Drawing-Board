@@ -4,9 +4,9 @@ import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
-import auth_router from "./routes/auth.js";
-import room_router from "./routes/room.js";
-import chats_router from "./routes/chats.js";
+// import auth_router from "./routes/auth.js";
+// // import room_router from "./routes/room.js";
+// import chats_router from "./routes/chats.js";
 import generate_router from "./routes/generate.js";
 import { authMiddleware } from "./middleware/auth.js";
 import type { Request, Response, NextFunction } from "express";
@@ -39,13 +39,6 @@ app.use(
   }),
 );
 
-// Rate Limiters
-
-const aiLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 10,
-  message: { message: "Too many AI requests, please wait." },
-});
 
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -55,12 +48,12 @@ const globalLimiter = rateLimit({
 app.use(globalLimiter);
 
 app.get("/health", (req, res) => res.status(200).json({ status: "ok" }));
-app.use("/api/auth", auth_router);
+// app.use("/api/auth", auth_router);
 
-app.use("/api/room", authMiddleware, room_router);
-app.use("/api/chats", authMiddleware, chats_router);
+// // app.use("/api/room", authMiddleware, room_router);
+// app.use("/api/chats", authMiddleware, chats_router);
 
-app.use("/api/generate", authMiddleware, aiLimiter, generate_router);
+app.use("/api/generate", generate_router);
 
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error("Server Error:", err);
