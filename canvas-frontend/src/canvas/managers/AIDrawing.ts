@@ -1,7 +1,6 @@
 import axios from "axios";
 import type { ShapePayload } from "../../types/shape";
 import type { Viewport } from "../core/viewport";
-import { BACKEND_URL } from "../../utils/config";
 import { prompt_generator } from "../../utils/prompt_generator"; 
 
 export class AIManager {
@@ -209,7 +208,8 @@ export class AIManager {
 
         // We assume the caller (handleGenerate) handles the catch block to update UI
         const response = await axios.post(
-            `${BACKEND_URL}/api/generate`, 
+            `${import.meta.env.VITE_BACKEND_URL}/api/generate`, 
+
             { prompt: fullPrompt },
             { 
                 headers: { 
