@@ -1,1 +1,1 @@
-{"root":["./src/index.ts","./src/middleware/auth.ts","./src/routes/generate.ts","./src/utils/asynchandler.ts","./src/utils/promptgenerator.ts"],"version":"5.9.3"}
+{"root":["./src/index.ts","./src/middleware/auth.ts","./src/routes/generate.ts","./src/utils/asynchandler.ts"],"version":"5.9.3"}

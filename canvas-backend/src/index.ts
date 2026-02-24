@@ -23,7 +23,7 @@ app.use(morgan("dev"));
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",").map((s) => s.trim())
-  : ["http://localhost:3000", "http://localhost:5173"];
+  : ["http://localhost:3000", "http://localhost:5173" , "https://ai-drawing-board.vercel.app/"];
 
 app.use(
   cors({
