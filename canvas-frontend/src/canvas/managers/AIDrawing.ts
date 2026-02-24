@@ -52,7 +52,7 @@ export class AIManager {
             borderRadius: "8px",
             backdropFilter: "blur(2px)",
             padding: "10px",
-            boxSizing: "border-box" // Critical for padding
+            boxSizing: "border-box"
         });
 
         // 4. Create Input Field
@@ -87,9 +87,24 @@ export class AIManager {
             transition: "background 0.2s"
         });
 
-        // 6. Append
+        // 6. Create Error Message Text (Initially Hidden/Empty)
+        const errorText = document.createElement("p");
+        Object.assign(errorText.style, {
+            color: "#ff4d4d", // Bright red
+            fontSize: "12px",
+            margin: "5px 0 0 0",
+            textAlign: "center",
+            maxWidth: "90%",
+            display: "none", // Hide initially
+            fontFamily: "sans-serif",
+            fontWeight: "500"
+        });
+
+        // 7. Append Everything
         wrapper.appendChild(input);
         wrapper.appendChild(button);
+        wrapper.appendChild(errorText); // Add error below button
+        
         document.body.appendChild(wrapper);
         this.activeOverlay = wrapper;
 
@@ -101,6 +116,10 @@ export class AIManager {
         const handleGenerate = async () => {
             const prompt = input.value.trim();
             if (!prompt) return;
+
+            // RESET STATE
+            errorText.style.display = "none";
+            errorText.textContent = "";
 
             // LOADING STATE
             input.disabled = true;
@@ -120,12 +139,28 @@ export class AIManager {
                 } else {
                     throw new Error("No shapes returned");
                 }
-            } catch (err) {
-                console.error(err);
+            } catch (err: any) {
+                
+                // --- EXTRACT BACKEND ERROR MESSAGE ---
+                // Axios usually puts backend JSON error in err.response.data
+                let errorMessage = "Something went wrong";
+                
+                if (err.response && err.response.data && err.response.data.message) {
+                 
+                    errorMessage = err.response.data.message;
+                } else if (err.message) {
+                    errorMessage = err.message;
+                }
+
+                // SHOW ERROR ON UI
+                errorText.textContent = errorMessage;
+                errorText.style.display = "block";
+
+                // Update Button Visuals
                 button.textContent = "Failed ❌";
                 button.style.background = "red";
                 
-                // Reset after 2 seconds
+                // Reset interactions after 2 seconds (but keep error visible until retry)
                 setTimeout(() => {
                     button.textContent = "Generate ✨";
                     button.disabled = false;
@@ -165,8 +200,6 @@ export class AIManager {
         // Uncomment if you have auth
         // const token = localStorage.getItem("token");
 
-        // 1. USE THE PROMPT GENERATOR
-        // This creates the strict JSON schema prompt we defined earlier
         const fullPrompt = prompt_generator(userPrompt, {
             x: Math.round(x),
             y: Math.round(y),
@@ -174,24 +207,24 @@ export class AIManager {
             height: Math.round(h)
         });
 
-        try {
-            // 2. Hit Backend
-            const response = await axios.post(
-                `${BACKEND_URL}/api/generate`, 
-                { prompt: fullPrompt }
-            );
+        // We assume the caller (handleGenerate) handles the catch block to update UI
+        const response = await axios.post(
+            `${BACKEND_URL}/api/generate`, 
+            { prompt: fullPrompt },
+            { 
+                headers: { 
+                    "Content-Type": "application/json",
+                    // "Authorization": `Bearer ${token}` 
+                } 
+            }
+        );
 
-            // 3. Parse Response
-            const result = response.data.result;
+        const result = response.data.result;
 
-            if (Array.isArray(result)) {
-                return result as ShapePayload[];
-            } 
+        if (Array.isArray(result)) {
+            return result as ShapePayload[];
+        } 
 
-            return [];
-        } catch (e) {
-            console.error("AI Generation Error:", e);
-            throw e;
-        }
+        return [];
     }
 }
