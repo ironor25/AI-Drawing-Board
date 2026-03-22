@@ -21,9 +21,11 @@ app.use(morgan("dev"));
 
 //CORS Configuration
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",").map((s) => s.trim())
-  : ["http://localhost:3000", "http://localhost:5173" , "https://ai-drawing-board.vercel.app/"];
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "https://ai-drawing-board.vercel.app",
+];
 
 app.use(
   cors({
@@ -38,7 +40,6 @@ app.use(
     credentials: true,
   }),
 );
-
 
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -59,12 +60,15 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error("Server Error:", err);
 
   // Specific Error Handling
-  if (err.type === 'entity.parse.failed') {
+  if (err.type === "entity.parse.failed") {
     res.status(400).json({ message: "Invalid JSON payload" });
     return;
   }
-  
-  if (err.name === "UnauthorizedError" || err.message === "Not allowed by CORS") {
+
+  if (
+    err.name === "UnauthorizedError" ||
+    err.message === "Not allowed by CORS"
+  ) {
     res.status(401).json({ message: err.message });
     return;
   }
@@ -72,7 +76,7 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   // Generic Fallback
   const status = err.status || 500;
   const message = err.message || "Internal Server Error";
-  
+
   res.status(status).json({ message });
 });
 
